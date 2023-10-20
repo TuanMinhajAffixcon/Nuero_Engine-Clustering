@@ -31,7 +31,7 @@ st.title('NEURO ENGINE  - With Hierarchical-Agglomerative Clustering')
 
 usecols=['Segment Name']
 unsupervised_tokens=[]
-affix_seg=pd.read_csv('../dataset/Affixcon_Segmentation.csv',encoding='latin-1',usecols=usecols).dropna()['Segment Name'].tolist()
+affix_seg=pd.read_csv('Affixcon_Segmentation.csv',encoding='latin-1',usecols=usecols).dropna()['Segment Name'].tolist()
 
 income=["Under $20,799","$20,800 - $41,599","$41,600 - $64,999","$65,000 - $77,999","$78,000 - $103,999","$104,000 - $155,999","$156,000+"]
 age=["<20","20-24","25-29","30-34","35-39","40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79","80-84",">84"]
@@ -52,7 +52,7 @@ def vectorizer(ds,vocabulary):
     return vectorizer_list
 
 usecols=['Age_Range','Gender','Income','interests', 'brands_visited', 'place_categories', 'geobehaviour']
-df_master=pd.read_csv('../dataset/Matched_data_1k.csv',usecols=usecols)
+df_master=pd.read_csv('Matched_data_1k.csv',usecols=usecols)
 df_master['Income']=df_master['Income'].fillna(df_master['Income'].mode()[0])
 df_master['Age_Range']=df_master['Age_Range'].fillna(df_master['Age_Range'].mode()[0])
 df_master['Gender']=df_master['Gender'].fillna(df_master['Gender'].mode()[0])
