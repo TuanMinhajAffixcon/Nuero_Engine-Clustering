@@ -55,7 +55,7 @@ def vectorizer(ds,vocabulary):
     return vectorizer_list
 
 usecols=['Age_Range','Gender','Income','interests', 'brands_visited', 'place_categories', 'geobehaviour']
-df_master=pd.read_csv('../dataset/Matched_data_1k.csv',usecols=usecols)
+df_master=pd.read_csv('Matched_data_1k.csv',usecols=usecols)
 df_master['Income']=df_master['Income'].fillna(df_master['Income'].mode()[0])
 df_master['Age_Range']=df_master['Age_Range'].fillna(df_master['Age_Range'].mode()[0])
 df_master['Gender']=df_master['Gender'].fillna(df_master['Gender'].mode()[0])
