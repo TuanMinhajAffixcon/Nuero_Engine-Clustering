@@ -34,7 +34,7 @@ st.title('NEURO ENGINE - With DBSCAN Clustering')
 
 usecols=['Segment Name']
 unsupervised_tokens=[]
-affix_seg=pd.read_csv('../dataset/Affixcon_Segmentation.csv',encoding='latin-1',usecols=usecols).dropna()['Segment Name'].tolist()
+affix_seg=pd.read_csv('Affixcon_Segmentation.csv',encoding='latin-1',usecols=usecols).dropna()['Segment Name'].tolist()
 
 income=["Under $20,799","$20,800 - $41,599","$41,600 - $64,999","$65,000 - $77,999","$78,000 - $103,999","$104,000 - $155,999","$156,000+"]
 age=["<20","20-24","25-29","30-34","35-39","40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79","80-84",">84"]
