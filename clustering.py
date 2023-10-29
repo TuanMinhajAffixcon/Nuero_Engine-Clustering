@@ -282,7 +282,6 @@ df_master=df_master.fillna("")
 selected_columns = ['interests', 'brands_visited', 'place_categories', 'geobehaviour']
 
 
-
 if methodology:
     option = st.selectbox("Select inputs", ('industry', 'segments', 'code'))
     if option=='industry':
@@ -388,7 +387,12 @@ if methodology:
     for column in columns_to_filter:
         df_master_filtered[column] = df_master_filtered[column].apply(filter_items)
     df_master_filtered[columns_to_filter] = df_master_filtered[columns_to_filter].applymap(lambda x: '|'.join(x))
+    
+    col1,col2=st.columns((0.75,0.25))
 
+    with col1:
+        with st.expander('Show Master Data Table'):
+            st.write(df_master_filtered)
     df_master_filtered['Concatenated'] = df_master_filtered[['interests', 'brands_visited', 'place_categories','geobehaviour', 'Income', 'Age_Range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
     vectorized_inputs_master_filtered=vectorizer(df_master_filtered,unsupervised_tokens)
     scaler = StandardScaler()
@@ -402,7 +406,11 @@ if methodology:
 else:
 
     df_master['Concatenated'] = df_master[['interests', 'brands_visited', 'place_categories','geobehaviour', 'Income', 'Age_Range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
+    col1,col2=st.columns((0.75,0.25))
 
+    with col1:
+        with st.expander('Show Master Data Table'):
+            st.write(df_master)
 
     # vectorized_inputs_master=vectorizer(df_master,unsupervised_tokens)
     vectorized_inputs_master = joblib.load('vectorized_inputs_master.pkl')
@@ -599,7 +607,7 @@ try:
 
 except ValueError as ve:
     st.error(str(ve))
-    
+
 
 
 
