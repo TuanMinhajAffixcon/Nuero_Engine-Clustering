@@ -13,6 +13,8 @@ from sklearn.metrics import silhouette_score as ss
 import itertools
 from sklearn.neighbors import NearestNeighbors
 import math
+import plotly.express as px
+from collections import Counter
 
 # st.set_page_config(layout="wide")
 st.set_page_config(page_title='NEURO ENGINE',page_icon=':man_and_woman_holding_hands:',layout='wide')
@@ -231,7 +233,6 @@ with col1:
 # methodology=st.checkbox('Select Filtered Segments')
 
 if file_uploader is not None:
-
     df_matched_wine=pd.read_csv(file_uploader).drop(['Flag'],axis=1)
     df_matched_wine.drop('maid',axis=1,inplace=True)
     df_matched_wine['Income']=df_matched_wine['Income'].fillna(df_matched_wine['Income'].mode()[0])
@@ -239,6 +240,43 @@ if file_uploader is not None:
     df_matched_wine['Gender']=df_matched_wine['Gender'].fillna(df_matched_wine['Gender'].mode()[0])
     df_matched_wine=df_matched_wine.fillna("")
     df_matched_wine['Concatenated'] = df_matched_wine[['interests', 'brands_visited', 'place_categories','geobehaviour','Income', 'age_range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
+    def show_demographics(df_matched_wine):
+        income_percentages_sample = round(df_matched_wine['Income'].value_counts(normalize=True) * 100,2)
+        gender_percentages_sample = round(df_matched_wine['Gender'].value_counts(normalize=True) * 100,2)
+        age_percentages_sample = round(df_matched_wine['age_range'].value_counts(normalize=True) * 100,2)
+        vocab=Counter()
+        for col in ['interests', 'brands_visited', 'place_categories','geobehaviour']:
+            for line in df_matched_wine[col]:
+                vocab.update(line.split("|"))
+        vocab = {key: value for key, value in vocab.items() if key.strip() != ''}
+        segments = px.bar(x=list(vocab.keys()), y=list(vocab.values()), title="Category Counts")
+        col1,col2,col3,col4=st.columns((4))
+        def demographics_sample(dem_df,dem_col):
+            dem_df = dem_df.reset_index()
+            dem_df.columns = [f'{dem_col} Category', 'Percentage']
+            fig = px.bar(dem_df, x='Percentage', y=f'{dem_col} Category', orientation='h', text='Percentage')
+            fig.update_layout(title=f'{dem_col} Category', xaxis_title='Percentage (%)', yaxis_title=f'{dem_col} Category')
+            return fig
+
+        with col1:
+            with st.expander('Show Income'):
+                income_sample=demographics_sample(income_percentages_sample,'Income')
+                st.plotly_chart(income_sample)
+        with col2:
+            with st.expander('Show Gender'):
+                gender_sample=demographics_sample(gender_percentages_sample,'Gender')
+                st.plotly_chart(gender_sample)
+        with col3:
+            with st.expander('Show Age Groups'):
+                age_sample=demographics_sample(age_percentages_sample,'Age')
+                st.plotly_chart(age_sample)
+        with col4:
+            with st.expander('Show Segments'):
+                st.plotly_chart(segments)
+    show_demographics(df_matched_wine)
+    # st.write(income_percentages_sample)
+    # st.write(gender_percentages_sample)
+    # st.write(age_percentages_sample)
 
     col1,col2=st.columns((0.75,0.25))
 
@@ -273,14 +311,24 @@ if file_uploader is not None:
 
 methodology=st.checkbox('Select Filter Segment for Master Data')
 
-usecols=['Age_Range','Gender','Income','interests', 'brands_visited', 'place_categories', 'geobehaviour']
+usecols=['age_range','Gender','Income','interests', 'brands_visited', 'place_categories', 'geobehaviour']
 df_master=pd.read_csv('Matched_data_1k.csv',usecols=usecols)
 df_master['Income']=df_master['Income'].fillna(df_master['Income'].mode()[0])
-df_master['Age_Range']=df_master['Age_Range'].fillna(df_master['Age_Range'].mode()[0])
+df_master['age_range']=df_master['age_range'].fillna(df_master['age_range'].mode()[0])
 df_master['Gender']=df_master['Gender'].fillna(df_master['Gender'].mode()[0])
 df_master=df_master.fillna("")
 selected_columns = ['interests', 'brands_visited', 'place_categories', 'geobehaviour']
+st.write('total Master Data Count is: ',len(df_master))
 
+col1,col2,col3=st.columns((3))
+with col1:
+    income=st.multiselect('Select Income ',df_master['Income'].unique(), default=df_master['Income'].unique())
+with col2:
+    gender=st.multiselect('Select Gender ',df_master['Gender'].unique(), default=df_master['Gender'].unique())
+with col3:
+    age_category=st.multiselect('Select Age ',df_master['age_range'].unique(), default=df_master['age_range'].unique())
+df_master=df_master.query('age_range ==@age_category & Gender==@gender & Income==@income')
+st.write('Data Record of Filtered Master Table: ',len(df_master))
 
 if methodology:
     option = st.selectbox("Select inputs", ('industry', 'segments', 'code'))
@@ -380,34 +428,41 @@ if methodology:
             final_condition = final_condition | condition
         df_new = df[final_condition]
         return df_new
-    df_master_filtered=filter_condition(df_master,selected_segments)
+    df_master=filter_condition(df_master,selected_segments)
     def filter_items(column):
         return [item for item in column.split('|') if item in selected_segments]
     columns_to_filter = ['interests', 'brands_visited', 'place_categories', 'geobehaviour']
     for column in columns_to_filter:
-        df_master_filtered[column] = df_master_filtered[column].apply(filter_items)
-    df_master_filtered[columns_to_filter] = df_master_filtered[columns_to_filter].applymap(lambda x: '|'.join(x))
+        df_master[column] = df_master[column].apply(filter_items)
+    df_master[columns_to_filter] = df_master[columns_to_filter].applymap(lambda x: '|'.join(x))
     
     col1,col2=st.columns((0.75,0.25))
 
     with col1:
         with st.expander('Show Master Data Table'):
-            st.write(df_master_filtered)
-    df_master_filtered['Concatenated'] = df_master_filtered[['interests', 'brands_visited', 'place_categories','geobehaviour', 'Income', 'Age_Range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
-    vectorized_inputs_master_filtered=vectorizer(df_master_filtered,unsupervised_tokens)
+            st.write(df_master)
+    st.write('Matching Master Data Count is: ',len(df_master))
+
+    
+
+    df_master['Concatenated'] = df_master[['interests', 'brands_visited', 'place_categories','geobehaviour', 'Income', 'age_range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
+    vectorized_inputs_master_filtered=vectorizer(df_master,unsupervised_tokens)
     scaler = StandardScaler()
     df_master_vectorized_filtered=scaler.fit_transform(vectorized_inputs_master_filtered)
 
     pca = PCA(n_components=2)
     components = pca.fit_transform(df_master_vectorized_filtered)
     df_master_vectorized_pca = pd.DataFrame(data=components, columns=['PC1', 'PC2'])
-    # st.write(((df_master_vectorized_pca)))
+    # df_master_vectorized_pca['index']=df_master.index.tolist()
+    df_master_vectorized_pca = df_master_vectorized_pca.set_index(pd.Index(df_master.index.tolist()))
+
+    # st.write(df_master_vectorized_pca)
 
 else:
-
-    df_master['Concatenated'] = df_master[['interests', 'brands_visited', 'place_categories','geobehaviour', 'Income', 'Age_Range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
+    show_demographics(df_master)
+    df_master['Concatenated'] = df_master[['interests', 'brands_visited', 'place_categories','geobehaviour', 'Income', 'age_range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
     col1,col2=st.columns((0.75,0.25))
-
+    # st.write('Matching Master Data Count is: ',len(df_master))
     with col1:
         with st.expander('Show Master Data Table'):
             st.write(df_master)
@@ -429,7 +484,10 @@ else:
     loaded_pca = joblib.load('pca_model.pkl')
     df_master_vectorized_pca = joblib.load('df_master_vectorized_pca.pkl')
 
-
+# st.write(df_master)
+# index_list=result_df.index.tolist()
+# index_list_master=df_master.index.tolist()
+# st.write(index_list_master)
 # # # plt.figure(figsize=(8, 6))
 plt.scatter(df_pca_wine['PC1'], df_pca_wine['PC2'], marker='*', color='orange', label='Random Data Points')
 plt.xlabel('X-axis')
@@ -438,9 +496,11 @@ plt.title('Scatter Plot of Random Data Points')
 # st.pyplot(plt)
 
 df_pca_standardized = pd.DataFrame(scaler.fit_transform(df_master_vectorized_pca))
+df_pca_standardized = df_pca_standardized.set_index(pd.Index(df_master.index.tolist()))
+
 df_pca_wine_standardized = pd.DataFrame(scaler.fit_transform(df_pca_wine[['PC1','PC2']]))
 
-# st.write(np.array(df_pca_wine_standardized))
+# st.write((df_pca_standardized))
 k_values = np.arange(1,10).tolist()
 k_distances = []  # This list will store the k-distances for each k.
 
@@ -553,7 +613,41 @@ try:
             st.markdown('Considering all the clusters')
             with st.expander("Click to expand distance to each points"):
                 st.write('distance to each points',result_df)
-        #     st.write(result_df.sort_values('distance_to_center'))
+                required_data_percentage=st.select_slider('select required percentage from master data',([i for i in range(10, 110, 10)]))
+                slicing_data=int(len(result_df)*int(required_data_percentage)/100)
+                index_list=result_df.index.tolist()[:slicing_data]
+                # st.write(index_list)
+
+                filtered_df = df_master.loc[index_list]
+                st.write(filtered_df)
+                # def demographics_filtered(dem):
+                income_percentages_filtered = round(df_matched_wine['Income'].value_counts(normalize=True) * 100,2)
+                income_percentages_sample = round(filtered_df['Income'].value_counts(normalize=True) * 100,2)
+                filtered_df_income = pd.DataFrame({'Income Percentages': income_percentages_filtered.index, 'Percentage': income_percentages_filtered.values})
+                sample_df_income = pd.DataFrame({'Income Percentages': income_percentages_sample.index, 'Percentage': income_percentages_sample.values})
+                combined_df = pd.concat([filtered_df_income, sample_df_income], axis=0, keys=['Filtered Data', 'Sample Data'], names=['Data Type'])
+                fig = px.bar(combined_df, x='Percentage', y='Income Percentages', text='Percentage', title='Income Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
+                st.plotly_chart(fig)
+                
+
+                Gender_percentages_filtered = round(df_matched_wine['Gender'].value_counts(normalize=True) * 100,2)
+                Gender_percentages_sample = round(filtered_df['Gender'].value_counts(normalize=True) * 100,2)
+                filtered_df_Gender = pd.DataFrame({'Gender Percentages': Gender_percentages_filtered.index, 'Percentage': Gender_percentages_filtered.values})
+                sample_df_Gender = pd.DataFrame({'Gender Percentages': Gender_percentages_sample.index, 'Percentage': Gender_percentages_sample.values})
+                combined_df = pd.concat([filtered_df_Gender, sample_df_Gender], axis=0, keys=['Filtered Data', 'Sample Data'], names=['Data Type'])
+                fig = px.bar(combined_df, x='Percentage', y='Gender Percentages', text='Percentage', title='Gender Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
+                st.plotly_chart(fig)
+
+                Age_range_percentages_filtered = round(df_matched_wine['age_range'].value_counts(normalize=True) * 100,2)
+                Age_range_percentages_sample = round(filtered_df['age_range'].value_counts(normalize=True) * 100,2)
+                filtered_df_age_range = pd.DataFrame({'age_range Percentages': Age_range_percentages_filtered.index, 'Percentage': Age_range_percentages_filtered.values})
+                sample_df_age_range = pd.DataFrame({'age_range Percentages': Age_range_percentages_sample.index, 'Percentage': Age_range_percentages_sample.values})
+                combined_df = pd.concat([filtered_df_age_range, sample_df_age_range], axis=0, keys=['Filtered Data', 'Sample Data'], names=['Data Type'])
+                fig = px.bar(combined_df, x='Percentage', y='age_range Percentages', text='Percentage', title='age_range Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
+                st.plotly_chart(fig)
+                # st.write(combined_df)
+
+
 
         with col2:
             st.markdown('Considering cluster by cluster')
