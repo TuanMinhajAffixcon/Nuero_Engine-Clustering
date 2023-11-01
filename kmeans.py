@@ -51,13 +51,13 @@ def vectorizer(ds,vocabulary):
         vectorizer_list.append(sentence_lst)
     return vectorizer_list
 
-usecols=['Age_Range','Gender','Income','interests', 'brands_visited', 'place_categories', 'geobehaviour']
+usecols=['age_range','Gender','Income','interests', 'brands_visited', 'place_categories', 'geobehaviour']
 df_master=pd.read_csv('Matched_data_1k.csv',usecols=usecols)
 df_master['Income']=df_master['Income'].fillna(df_master['Income'].mode()[0])
-df_master['Age_Range']=df_master['Age_Range'].fillna(df_master['Age_Range'].mode()[0])
+df_master['Age_Range']=df_master['age_range'].fillna(df_master['age_range'].mode()[0])
 df_master['Gender']=df_master['Gender'].fillna(df_master['Gender'].mode()[0])
 df_master=df_master.fillna("")
-df_master['Concatenated'] = df_master[['interests', 'brands_visited', 'place_categories','geobehaviour', 'Income', 'Age_Range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
+df_master['Concatenated'] = df_master[['interests', 'brands_visited', 'place_categories','geobehaviour', 'Income', 'age_range', 'Gender']].apply(lambda row: '|'.join(row), axis=1)
 
 # vectorized_inputs_master=vectorizer(df_master,unsupervised_tokens)
 vectorized_inputs_master = joblib.load('vectorized_inputs_master.pkl')
