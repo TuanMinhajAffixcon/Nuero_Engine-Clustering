@@ -15,8 +15,6 @@ from sklearn.neighbors import NearestNeighbors
 import math
 import plotly.express as px
 from collections import Counter
-from scipy.spatial import ConvexHull
-import scipy.stats as stats
 
 # st.set_page_config(layout="wide")
 st.set_page_config(page_title='NEURO ENGINE',page_icon=':man_and_woman_holding_hands:',layout='wide')
@@ -322,15 +320,15 @@ df_master=df_master.fillna("")
 selected_columns = ['interests', 'brands_visited', 'place_categories', 'geobehaviour']
 st.write('total Master Data Count is: ',len(df_master))
 
-# col1,col2,col3=st.columns((3))
-# with col1:
-#     income=st.multiselect('Select Income ',df_master['Income'].unique(), default=df_master['Income'].unique())
-# with col2:
-#     gender=st.multiselect('Select Gender ',df_master['Gender'].unique(), default=df_master['Gender'].unique())
-# with col3:
-#     age_category=st.multiselect('Select Age ',df_master['age_range'].unique(), default=df_master['age_range'].unique())
-# df_master=df_master.query('age_range ==@age_category & Gender==@gender & Income==@income')
-# st.write('Data Record of Filtered Master Table: ',len(df_master))
+col1,col2,col3=st.columns((3))
+with col1:
+    income=st.multiselect('Select Income ',df_master['Income'].unique(), default=df_master['Income'].unique())
+with col2:
+    gender=st.multiselect('Select Gender ',df_master['Gender'].unique(), default=df_master['Gender'].unique())
+with col3:
+    age_category=st.multiselect('Select Age ',df_master['age_range'].unique(), default=df_master['age_range'].unique())
+df_master=df_master.query('age_range ==@age_category & Gender==@gender & Income==@income')
+st.write('Data Record of Filtered Master Table: ',len(df_master))
 
 if methodology:
     option = st.selectbox("Select inputs", ('industry', 'segments', 'code'))
@@ -437,8 +435,7 @@ if methodology:
     for column in columns_to_filter:
         df_master[column] = df_master[column].apply(filter_items)
     df_master[columns_to_filter] = df_master[columns_to_filter].applymap(lambda x: '|'.join(x))
-    # st.write(df_master.index)
-
+    
     col1,col2=st.columns((0.75,0.25))
 
     with col1:
@@ -515,7 +512,6 @@ for k in k_values:
 plt.figure()
 for i in range(len(k_values)):
     plt.plot(sorted(k_distances[i]), label=f'k={k_values[i]}')
-
 plt.xlabel('Data Points (sorted)')
 plt.ylabel('k-distance')
 plt.legend()
@@ -543,49 +539,11 @@ try:
         plt.scatter(df_pca_standardized[0], df_pca_standardized[1], label='Overall', marker='o')
 
         cluster_labels = dbscan.fit_predict(df_pca_wine_standardized)
-        # st.write(cluster_labels)
         unique_labels=np.unique(cluster_labels)
         mapping = {label: index for index, label in enumerate(unique_labels)}
         cluster_labels  = np.array([mapping[label] for label in cluster_labels])
-        df_pca_wine_standardized_backup=df_pca_wine_standardized.copy()
-        df_pca_wine_standardized_backup=np.array(df_pca_wine_standardized_backup)
-        combined_data = df_pca_wine_standardized_backup[cluster_labels != 0]
-        plt.scatter(df_pca_wine_standardized_backup[cluster_labels == 0, 0], df_pca_wine_standardized_backup[cluster_labels == 0, 1], color='black', label='sample',marker='x')
-        for i in range(1,len(unique_labels)):
-            plt.scatter(df_pca_wine_standardized_backup[cluster_labels == i, 0], df_pca_wine_standardized_backup[cluster_labels == i, 1], label='sample',marker='x')
-        
 
-        hull = ConvexHull(combined_data)
-
-        for simplex in hull.simplices:
-            plt.plot(combined_data[simplex, 0], combined_data[simplex, 1], 'k-', linewidth=2)
-
-        # plt.scatter(df_pca_wine_standardized[0], df_pca_wine_standardized[1], label='Wine', marker='x',c=cluster_labels)
-        # Points inside the Convex Hull
-        points_inside_hull = []
-
-        # Iterate over each data point in the master DataFrame
-        for index, row in df_pca_standardized.iterrows():
-            point = [row[0], row[1]]
-
-            # Check if the point lies inside the Convex Hull
-            if all(hull.equations.dot(np.append(point, 1)) <= 0):
-                points_inside_hull.append(point)
-
-        # Convert the list of points inside the Convex Hull to a NumPy array
-        df_pca_standardized2 = pd.DataFrame(np.array(points_inside_hull))
-        # st.write(df_pca_standardized2[0].tolist())
-        df_pca_standardized = df_pca_standardized[df_pca_standardized[0].isin(df_pca_standardized2[0].tolist())]
-        
-        # st.write('Master Data points inside selected boundary',len(df_pca_standardized))
-        df_master_filter=df_master.copy()
-        df_master_filter=df_master_filter.loc[df_pca_standardized.index]
-        # st.write((df_master_filter))
-        # st.write(len(df_master))
-
-        # st.write('Data Record of Filtered Master Table: ',len(df_master))
-
-
+        plt.scatter(df_pca_wine_standardized[0], df_pca_wine_standardized[1], label='Wine', marker='x',c=cluster_labels)
 
         cluster_centers = np.zeros((len(np.unique(cluster_labels)), df_pca_wine_standardized.shape[1]))
         for label in np.unique(cluster_labels):
@@ -618,36 +576,15 @@ try:
         # # plt.grid(True)
         # # plt.show()
 
-        # with col1:
+        with col1:
             # plt.grid(True)
-        fig.patch.set_alpha(0.0)
-        ax.patch.set_alpha(0.0)
-        ax.set_facecolor('none')
-        boundaries=['top','right','bottom','left']
-        for boundary in boundaries:
-            ax.spines[boundary].set_visible(False)
-        st.pyplot(plt)
-        st.write('Master Data points inside selected boundary',len(df_pca_standardized))
-        
-        col1,col2,col3,col4=st.columns((4))
-
-        with col1:
-            income=st.multiselect('Select Income ',df_master_filter['Income'].unique(), default=df_master_filter['Income'].unique())
-        with col2:
-            gender=st.multiselect('Select Gender ',df_master_filter['Gender'].unique(), default=df_master_filter['Gender'].unique())
-        with col3:
-            age_category=st.multiselect('Select Age ',df_master_filter['age_range'].unique(), default=df_master_filter['age_range'].unique())
-        df_master_filter=df_master_filter.query('age_range ==@age_category & Gender==@gender & Income==@income')
-        show_demographics(df_master_filter)
-
-        with col1:
-            st.write('Master Data points selected Demographics',len(df_master_filter))
-            with st.expander("Filtered Data Table with selected demographics"):
-                st.write('Master Data',(df_master_filter))
-                csv=df_master_filter.to_csv().encode('utf-8')
-                st.download_button("Download filtered Master table ",data=csv, file_name="filtered master data.csv")
-
-        df_pca_standardized=df_pca_standardized.loc[df_master_filter.index]
+            fig.patch.set_alpha(0.0)
+            ax.patch.set_alpha(0.0)
+            ax.set_facecolor('none')
+            boundaries=['top','right','bottom','left']
+            for boundary in boundaries:
+                ax.spines[boundary].set_visible(False)
+            st.pyplot(plt)
 
         df_pca_wine_standardized['Cluster'] = cluster_labels
 
@@ -671,59 +608,51 @@ try:
         # # Convert the result to a DataFrame
         result_df = df_pca_standardized[[0, 1, 'cluster', 'distance_to_center']]
         result_df.columns=['x','y','Cluster', 'distance_to_center']
-        # col1,col2=st.columns((0.75,0.25))
-        with col4:
+        # # Display or save the result DataFrame as needed
+        with col2:
             st.markdown('Considering all the clusters')
             with st.expander("Click to expand distance to each points"):
                 st.write('distance to each points',result_df)
                 required_data_percentage=st.select_slider('select required percentage from master data',([i for i in range(10, 110, 10)]))
                 slicing_data=int(len(result_df)*int(required_data_percentage)/100)
                 index_list=result_df.index.tolist()[:slicing_data]
-                # st.write(result_df.index)
-                # st.write(df_master.index)
-                # st.write(df_pca_standardized.index)
-
+                # st.write(index_list)
 
                 filtered_df = df_master.loc[index_list]
                 st.write(filtered_df)
-                def demographics_filtered():
-                    income_percentages_filtered = round(df_matched_wine['Income'].value_counts(normalize=True) * 100,2)
-                    income_percentages_sample = round(filtered_df['Income'].value_counts(normalize=True) * 100,2)
-                    filtered_df_income = pd.DataFrame({'Income Percentages': income_percentages_filtered.index, 'Percentage': income_percentages_filtered.values})
-                    sample_df_income = pd.DataFrame({'Income Percentages': income_percentages_sample.index, 'Percentage': income_percentages_sample.values})
-                    combined_df = pd.concat([filtered_df_income, sample_df_income], axis=0, keys=['Sample Data', 'Filtered Data'], names=['Data Type'])
-                    fig = px.bar(combined_df, x='Percentage', y='Income Percentages', text='Percentage', title='Income Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
-                    st.plotly_chart(fig)
-                    
+                # def demographics_filtered(dem):
+                income_percentages_filtered = round(df_matched_wine['Income'].value_counts(normalize=True) * 100,2)
+                income_percentages_sample = round(filtered_df['Income'].value_counts(normalize=True) * 100,2)
+                filtered_df_income = pd.DataFrame({'Income Percentages': income_percentages_filtered.index, 'Percentage': income_percentages_filtered.values})
+                sample_df_income = pd.DataFrame({'Income Percentages': income_percentages_sample.index, 'Percentage': income_percentages_sample.values})
+                combined_df = pd.concat([filtered_df_income, sample_df_income], axis=0, keys=['Filtered Data', 'Sample Data'], names=['Data Type'])
+                fig = px.bar(combined_df, x='Percentage', y='Income Percentages', text='Percentage', title='Income Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
+                st.plotly_chart(fig)
+                
 
-                    Gender_percentages_filtered = round(df_matched_wine['Gender'].value_counts(normalize=True) * 100,2)
-                    Gender_percentages_sample = round(filtered_df['Gender'].value_counts(normalize=True) * 100,2)
-                    filtered_df_Gender = pd.DataFrame({'Gender Percentages': Gender_percentages_filtered.index, 'Percentage': Gender_percentages_filtered.values})
-                    sample_df_Gender = pd.DataFrame({'Gender Percentages': Gender_percentages_sample.index, 'Percentage': Gender_percentages_sample.values})
-                    combined_df = pd.concat([filtered_df_Gender, sample_df_Gender], axis=0, keys=['Sample Data', 'Filtered Data'], names=['Data Type'])
-                    fig = px.bar(combined_df, x='Percentage', y='Gender Percentages', text='Percentage', title='Gender Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
-                    st.plotly_chart(fig)
+                Gender_percentages_filtered = round(df_matched_wine['Gender'].value_counts(normalize=True) * 100,2)
+                Gender_percentages_sample = round(filtered_df['Gender'].value_counts(normalize=True) * 100,2)
+                filtered_df_Gender = pd.DataFrame({'Gender Percentages': Gender_percentages_filtered.index, 'Percentage': Gender_percentages_filtered.values})
+                sample_df_Gender = pd.DataFrame({'Gender Percentages': Gender_percentages_sample.index, 'Percentage': Gender_percentages_sample.values})
+                combined_df = pd.concat([filtered_df_Gender, sample_df_Gender], axis=0, keys=['Filtered Data', 'Sample Data'], names=['Data Type'])
+                fig = px.bar(combined_df, x='Percentage', y='Gender Percentages', text='Percentage', title='Gender Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
+                st.plotly_chart(fig)
 
-                    Age_range_percentages_filtered = round(df_matched_wine['age_range'].value_counts(normalize=True) * 100,2)
-                    Age_range_percentages_sample = round(filtered_df['age_range'].value_counts(normalize=True) * 100,2)
-                    filtered_df_age_range = pd.DataFrame({'age_range Percentages': Age_range_percentages_filtered.index, 'Percentage': Age_range_percentages_filtered.values})
-                    sample_df_age_range = pd.DataFrame({'age_range Percentages': Age_range_percentages_sample.index, 'Percentage': Age_range_percentages_sample.values})
-                    combined_df = pd.concat([filtered_df_age_range, sample_df_age_range], axis=0, keys=['Sample Data', 'Filtered Data'], names=['Data Type'])
-                    fig = px.bar(combined_df, x='Percentage', y='age_range Percentages', text='Percentage', title='age_range Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
-                    st.plotly_chart(fig)
-                demographics_filtered()
+                Age_range_percentages_filtered = round(df_matched_wine['age_range'].value_counts(normalize=True) * 100,2)
+                Age_range_percentages_sample = round(filtered_df['age_range'].value_counts(normalize=True) * 100,2)
+                filtered_df_age_range = pd.DataFrame({'age_range Percentages': Age_range_percentages_filtered.index, 'Percentage': Age_range_percentages_filtered.values})
+                sample_df_age_range = pd.DataFrame({'age_range Percentages': Age_range_percentages_sample.index, 'Percentage': Age_range_percentages_sample.values})
+                combined_df = pd.concat([filtered_df_age_range, sample_df_age_range], axis=0, keys=['Filtered Data', 'Sample Data'], names=['Data Type'])
+                fig = px.bar(combined_df, x='Percentage', y='age_range Percentages', text='Percentage', title='age_range Percentages - Filtered Data and Sample Data', color=combined_df.index.get_level_values(0))
+                st.plotly_chart(fig)
+                # st.write(combined_df)
 
 
 
-        with col4:
+        with col2:
             st.markdown('Considering cluster by cluster')
             for i in range(len(np.unique(cluster_labels))):
                 group_cluster=result_df[result_df['Cluster']==i].sort_values('distance_to_center')
-                test_df=group_cluster.copy()
-                fig1 = px.histogram(test_df, x="distance_to_center", nbins=20)
-
-                test_df['Z_score']=(test_df.distance_to_center)/test_df.distance_to_center.std()
-
                 if not group_cluster.empty:
                     with st.expander(f"Click to expand distance to grouped cluster points cluster: {i}"):
                         cluster_percentage = str(round(len(group_cluster)/len(result_df)*100,2))+' %'
@@ -731,18 +660,7 @@ try:
                         # label = f'Cluster {label} ({cluster_percentage:.2f}%)'
                         st.write(f'cluster record {i}: ',len(group_cluster))
                         st.write(group_cluster.head())
-                        st.plotly_chart(fig1)
-                        Z_score = st.select_slider(f'{i}_Z-Score from master data', [1, 2, 3, 4, 5])
 
-                        group_cluster_filtered=test_df[test_df.Z_score<=Z_score]
-                        st.write('Filtered Master Data Count by Z-Score ',len(group_cluster_filtered))
-
-                        index_list=group_cluster_filtered.index.tolist()[:slicing_data]
-                        filtered_df = df_master.loc[index_list]
-                        demographics_filtered()
-                        csv=filtered_df.to_csv().encode('utf-8')
-
-                        st.download_button(f"Download filtered Master table {i}",data=csv, file_name=f"filtered master data {i}.csv")
 
         with col1:
 
@@ -775,17 +693,14 @@ try:
 
             else:
                 loaded_model_instance=joblib.load('best_params_df'+file_name)
-                with col4:
-                    with st.expander(f"Click to Best Parameters by Cluster Score"):
-
-                        st.write(loaded_model_instance)
+                with col2:
+                    st.write(loaded_model_instance)
 
 
 
 
 except ValueError as ve:
     st.error(str(ve))
-
 
 
 
